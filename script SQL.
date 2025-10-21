@@ -1,0 +1,177 @@
+*/
+
+-- Tabela: Paciente
+-- Armazena os dados cadastrais dos pacientes.
+CREATE TABLE Paciente (
+    id_paciente INT PRIMARY KEY AUTO_INCREMENT,
+    nome VARCHAR(255) NOT NULL,
+    data_nascimento DATE NOT NULL,
+    cpf VARCHAR(11) NOT NULL UNIQUE,
+    rg VARCHAR(20),
+    endereco TEXT,
+    telefone VARCHAR(15),
+    email VARCHAR(255) UNIQUE
+);
+
+-- Tabela: Especialidade
+-- Armazena as especialidades médicas (ex: Cardiologia, Neurologia).
+CREATE TABLE Especialidade (
+    id_especialidade INT PRIMARY KEY AUTO_INCREMENT,
+    nome VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- Tabela: Medico
+-- Armazena os dados cadastrais dos médicos.
+CREATE TABLE Medico (
+    id_medico INT PRIMARY KEY AUTO_INCREMENT,
+    nome VARCHAR(255) NOT NULL,
+    crm VARCHAR(20) NOT NULL UNIQUE,
+    tipo VARCHAR(50),
+    telefone VARCHAR(15),
+    email VARCHAR(255) UNIQUE
+);
+
+-- Tabela: Enfermeiro
+-- Armazena os dados cadastrais da equipe de enfermagem.
+CREATE TABLE Enfermeiro (
+    id_enfermeiro INT PRIMARY KEY AUTO_INCREMENT,
+    nome VARCHAR(255) NOT NULL,
+    cpf VARCHAR(11) NOT NULL UNIQUE,
+    cre VARCHAR(20) NOT NULL UNIQUE
+);
+
+-- Tabela: Tipo_quarto
+-- Classifica os tipos de quarto (ex: UTI, Apartamento) e seus valores.
+CREATE TABLE Tipo_quarto (
+    id_tipo_quarto INT PRIMARY KEY AUTO_INCREMENT,
+    descricao VARCHAR(100) NOT NULL,
+    valor_diaria DECIMAL(10, 2) NOT NULL
+);
+
+-- Tabela: Medicamento
+-- Catálogo mestre de medicamentos.
+CREATE TABLE Medicamento (
+    id_medicamento INT PRIMARY KEY AUTO_INCREMENT,
+    nome VARCHAR(255) NOT NULL
+);
+
+-- Tabela: Quarto
+-- Armazena os quartos físicos do hospital.
+-- Depende de 'Tipo_quarto' para sua classificação.
+CREATE TABLE Quarto (
+    id_quarto INT PRIMARY KEY AUTO_INCREMENT,
+    numero VARCHAR(10) NOT NULL UNIQUE,
+    id_tipo_quarto INT NOT NULL,
+    
+    FOREIGN KEY (id_tipo_quarto) 
+        REFERENCES Tipo_quarto(id_tipo_quarto)
+);
+
+-- Tabela: Medico_Especialidade
+-- Tabela associativa (N:N) para ligar Médicos a Especialidades.
+-- Necessária pois um médico pode ter múltiplas especialidades.
+CREATE TABLE Medico_Especialidade (
+    id_medico INT NOT NULL,
+    id_especialidade INT NOT NULL,
+    
+    -- Chave primária composta para garantir que a ligação é única
+    PRIMARY KEY (id_medico, id_especialidade),
+    
+    FOREIGN KEY (id_medico) 
+        REFERENCES Medico(id_medico),
+    FOREIGN KEY (id_especialidade) 
+        REFERENCES Especialidade(id_especialidade)
+);
+
+/*
+
+*/
+
+-- Tabela: Consulta
+-- Registra as consultas ambulatoriais (eventos).
+-- Depende de 'Paciente' e 'Medico'.
+CREATE TABLE Consulta (
+    id_consulta INT PRIMARY KEY AUTO_INCREMENT,
+    data_hora DATETIME NOT NULL,
+    valor DECIMAL(10, 2),
+    numero_carteira VARCHAR(50),
+    id_paciente INT NOT NULL,
+    id_medico INT NOT NULL,
+    
+    FOREIGN KEY (id_paciente) 
+        REFERENCES Paciente(id_paciente),
+    FOREIGN KEY (id_medico) 
+        REFERENCES Medico(id_medico)
+);
+
+-- Tabela: Internacao
+-- Registra as internações hospitalares (eventos).
+-- Depende de 'Paciente', 'Medico' e 'Quarto'.
+CREATE TABLE Internacao (
+    id_internacao INT PRIMARY KEY AUTO_INCREMENT,
+    data_entrada DATETIME NOT NULL,
+    data_prev_alta DATE,
+    data_alta DATETIME NULL, -- Nulo significa que o paciente ainda está internado
+    procedimento TEXT,
+    id_paciente INT NOT NULL,
+    id_medico INT NOT NULL,
+    id_quarto INT NOT NULL,
+    
+    FOREIGN KEY (id_paciente) 
+        REFERENCES Paciente(id_paciente),
+    FOREIGN KEY (id_medico) 
+        REFERENCES Medico(id_medico),
+    FOREIGN KEY (id_quarto) 
+        REFERENCES Quarto(id_quarto)
+);
+
+/*
+
+*/
+
+-- Tabela: Receita
+-- Armazena a "cabeçalho" da receita gerada em uma consulta.
+-- Depende de 'Consulta'.
+CREATE TABLE Receita (
+    id_receita INT PRIMARY KEY AUTO_INCREMENT,
+    id_consulta INT NOT NULL,
+    observacoes TEXT,
+    
+    FOREIGN KEY (id_consulta) 
+        REFERENCES Consulta(id_consulta)
+);
+
+-- Tabela: Internacao_Enfermeiro
+-- Tabela associativa (N:N) para ligar Enfermeiros a Internações.
+-- Necessária pois uma internação é cuidada por vários enfermeiros.
+CREATE TABLE Internacao_Enfermeiro (
+    id_internacao INT NOT NULL,
+    id_enfermeiro INT NOT NULL,
+    turno VARCHAR(20), -- Atributo do relacionamento (opcional)
+    
+    PRIMARY KEY (id_internacao, id_enfermeiro),
+    
+    FOREIGN KEY (id_internacao) 
+        REFERENCES Internacao(id_internacao),
+    FOREIGN KEY (id_enfermeiro) 
+        REFERENCES Enfermeiro(id_enfermeiro)
+);
+
+-- Tabela: Receita_Medicamento
+-- Tabela associativa (N:N) para ligar Receitas a Medicamentos.
+-- Armazena os itens de uma receita (posologia, quantidade).
+CREATE TABLE Receita_Medicamento (
+    id_receita INT NOT NULL,
+    id_medicamento INT NOT NULL,
+    quantidade VARCHAR(50) NOT NULL,
+    posologia TEXT NOT NULL, -- Instruções de uso
+    
+    PRIMARY KEY (id_receita, id_medicamento),
+    
+    FOREIGN KEY (id_receita) 
+        REFERENCES Receita(id_receita),
+    FOREIGN KEY (id_medicamento) 
+        REFERENCES Medicamento(id_medicamento)
+);
+
+-- Fim do script
